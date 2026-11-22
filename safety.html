@@ -49,10 +49,10 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--navy2);border-co
 .chip{border:1px solid var(--line);border-radius:20px;padding:7px 11px;font-size:13px;background:#fff;user-select:none}
 .chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
 .hint{font-size:12px;color:var(--sub);margin-top:6px;line-height:1.5}
-.photos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
-.photos div{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#eee}
-.photos img{width:100%;height:100%;object-fit:cover}
-.photos button{position:absolute;top:3px;right:3px;border:0;border-radius:50%;width:24px;height:24px;background:rgba(0,0,0,.6);color:#fff;font-size:14px;line-height:24px;padding:0}
+.pitem{display:flex;gap:10px;margin-top:10px;padding:8px;border:1px solid var(--line);border-radius:10px;align-items:flex-start}
+.pitem img{width:84px;height:84px;object-fit:cover;border-radius:8px;flex:0 0 auto}
+.pitem .pm{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.pitem select,.pitem input{padding:8px;font-size:15px}
 .list-item{background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
 .list-item .t{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
 .list-item .site{font-weight:700;font-size:15px}
@@ -199,14 +199,17 @@ th{background:#EEF2F7}
 
   <div class="card">
     <h2>📷 현장 사진</h2>
+    <label style="margin-top:0">📌 지금 찍을 사진의 구분 <span style="color:var(--orange)">(위에서 수행 업무를 먼저 선택)</span></label>
+    <div class="chips" id="photoTaskChips"></div>
     <div class="row">
       <button class="btn sec" onclick="document.getElementById('camIn').click()">📸 촬영</button>
       <button class="btn sec" onclick="document.getElementById('galIn').click()">🖼️ 앨범</button>
     </div>
     <input type="file" id="camIn" accept="image/*" capture="environment" class="hidden">
     <input type="file" id="galIn" accept="image/*" multiple class="hidden">
-    <div class="photos" id="photoBox"></div>
-    <div class="hint">사진은 자동으로 축소(가로 1280px)되어 휴대폰 안에 저장됩니다.</div>
+    <div class="hint" id="photoSum" style="font-weight:700;color:var(--navy)"></div>
+    <div id="photoBox"></div>
+    <div class="hint">위에서 고른 구분으로 사진이 자동 분류됩니다. 사진마다 구분을 바꾸거나 설명을 적을 수 있습니다. 사진은 가로 1280px로 줄여 휴대폰 안에 저장됩니다.</div>
   </div>
 
   <button class="btn or" onclick="saveRecord()">💾 저장하고 업무일지 파일 만들기</button>
@@ -252,6 +255,7 @@ th{background:#EEF2F7}
       <option value="perf">기간 실적 보고서 (월간·분기·연간)</option>
       <option value="site">현장별 안전관리 지원 결과</option>
       <option value="issue">주요 지적사항 및 조치 현황</option>
+      <option value="photo">업무별 사진 대장 (근거 사진 모음)</option>
     </select>
     <label>보고서 제목</label>
     <input id="repTitle">
@@ -386,6 +390,7 @@ document.querySelectorAll('.task').forEach(el=>el.onclick=()=>{
   const t=el.dataset.t; selTasks.has(t)?selTasks.delete(t):selTasks.add(t); syncTasks(); saveDraft();
 });
 function syncTasks(){
+  try{ renderPhotos(); }catch(e){}
   document.querySelectorAll('.task').forEach(el=>el.classList.toggle('on',selTasks.has(el.dataset.t)));
   TASK_ORDER.forEach(t=>$('s-'+t).classList.toggle('hidden',!selTasks.has(t)));
 }
@@ -405,8 +410,9 @@ function collect(){
     date:v('f-date'), start:v('f-start'), end:v('f-end'), site:v('f-site'), addr:v('f-addr'), kind:v('f-kind'),
     company:v('f-company'), contact:v('f-contact'), tasks:TASK_ORDER.filter(t=>selTasks.has(t)),
     note:v('f-note'), follow:$('f-follow').checked, followDate:v('f-followDate'), followText:v('f-followText'), followDone:false,
-    photos: photos.slice()
+    photos: []
   };
+  r.photos = photos.map(p=>({data:p.data,time:p.time,task:ptask(p,r.tasks),cap:(p.cap||'').trim()}));
   if(selTasks.has('insp')) r.insp={areas:chipVals('inspAreas'),count:num(v('i-count')),action:v('i-action'),items:v('i-items'),good:v('i-good')};
   if(selTasks.has('edu')) r.edu={type:v('e-type'),topic:v('e-topic'),people:num(v('e-people')),minutes:num(v('e-min'))};
   if(selTasks.has('risk')) r.risk={type:v('r-type'),process:v('r-process'),hazards:num(v('r-hazards')),measures:num(v('r-measures')),detail:v('r-detail')};
@@ -425,7 +431,7 @@ function fill(r){
   s('e-type',e.type||'정기교육'); s('e-topic',e.topic); s('e-people',e.people??0); s('e-min',e.minutes??0);
   s('r-type',k.type||'최초평가'); s('r-process',k.process); s('r-hazards',k.hazards??0); s('r-measures',k.measures??0); s('r-detail',k.detail);
   s('t-people',t.people??0); s('t-min',t.minutes??10); s('t-leader',t.leader); s('t-content',t.content);
-  photos=(r.photos||[]).slice(); syncTasks(); renderPhotos();
+  photos=(r.photos||[]).map(p=>({...p})); syncTasks(); renderPhotos();
 }
 function resetForm(confirmFirst){
   if(confirmFirst===true && !confirm('입력 중인 내용을 모두 지울까요?')) return;
@@ -450,14 +456,32 @@ function resizeImage(file){
     fr.onerror=rej; fr.readAsDataURL(file);
   });
 }
+const PH_TASKS = {...TASKS, etc:'기타·공통'}, PH_ORDER = [...TASK_ORDER,'etc'];
+let curPhotoTask = '', curPicked = false;
+const ptask = (p,tasks) => (p && tasks.includes(p.task)) ? p.task : 'etc';
+function photoGroup(r){ const g={insp:[],edu:[],risk:[],tbm:[],etc:[]}; (r.photos||[]).forEach(p=>g[ptask(p,r.tasks||[])].push(p)); return g; }
+const availPhotoTasks = () => [...TASK_ORDER.filter(t=>selTasks.has(t)),'etc'];
+function renderPhotoChips(){
+  const av=availPhotoTasks(); if(!curPicked||!av.includes(curPhotoTask)) curPhotoTask=av[0];
+  $('photoTaskChips').innerHTML=av.map(t=>`<span class="chip ${t===curPhotoTask?'on':''}" onclick="curPhotoTask='${t}';curPicked=true;renderPhotoChips()">${PH_TASKS[t]}</span>`).join('');
+}
 async function addPhotos(files){
-  for(const f of files){ try{ photos.push({data:await resizeImage(f),time:nowTime()}); }catch(e){ toast('사진을 읽지 못했습니다'); } }
-  renderPhotos();
+  renderPhotoChips(); const t=curPhotoTask; let n=0;
+  for(const f of files){ try{ photos.push({data:await resizeImage(f),time:nowTime(),task:t,cap:''}); n++; }catch(e){ toast('사진을 읽지 못했습니다'); } }
+  renderPhotos(); if(n) toast(`${PH_TASKS[t]} 사진 ${n}장 저장`);
 }
 $('camIn').onchange=e=>{ addPhotos([...e.target.files]); e.target.value=''; };
 $('galIn').onchange=e=>{ addPhotos([...e.target.files]); e.target.value=''; };
 function renderPhotos(){
-  $('photoBox').innerHTML=photos.map((p,i)=>`<div><img src="${p.data}" alt="현장사진"><button onclick="photos.splice(${i},1);renderPhotos()">×</button></div>`).join('');
+  const tasks=[...selTasks]; photos.forEach(p=>p.task=ptask(p,tasks));
+  renderPhotoChips();
+  const cnt={}; photos.forEach(p=>cnt[p.task]=(cnt[p.task]||0)+1);
+  $('photoSum').textContent=photos.length?'분류: '+PH_ORDER.filter(t=>cnt[t]).map(t=>`${PH_TASKS[t]} ${cnt[t]}장`).join(' · '):'';
+  const opts=availPhotoTasks();
+  $('photoBox').innerHTML=photos.map((p,i)=>`<div class="pitem"><img src="${p.data}" alt="현장사진"><div class="pm">
+    <select onchange="photos[${i}].task=this.value;renderPhotos()">${opts.map(t=>`<option value="${t}" ${p.task===t?'selected':''}>${PH_TASKS[t]}</option>`).join('')}</select>
+    <input value="${esc(p.cap||'')}" placeholder="설명 (예: 이동식 비계 바퀴 고정 불량)" oninput="photos[${i}].cap=this.value">
+    <button class="btn sm red" onclick="photos.splice(${i},1);renderPhotos()">🗑 삭제</button></div></div>`).join('');
 }
 
 /* GPS */
@@ -497,6 +521,8 @@ function summaryLine(r){
   if(r.tbm) a.push(`TBM ${r.tbm.people}명`);
   return a.join(' · ');
 }
+function photoSummary(r){ const g=photoGroup(r); const a=PH_ORDER.filter(t=>g[t].length).map(t=>`${PH_TASKS[t].replace(/ 지원| 실시 지원/,'')} ${g[t].length}`);
+  return a.length?`<div style="font-size:12px;color:var(--sub);margin-top:4px">📷 ${a.join(' · ')}</div>`:''; }
 function renderList(){
   const q=$('q').value.trim().toLowerCase(), qt=$('qTask').value;
   const list=RECORDS.filter(r=>(!qt||r.tasks.includes(qt)) && (!q || JSON.stringify([r.site,r.company,r.addr,r.note,r.insp,r.edu,r.risk,r.tbm]).toLowerCase().includes(q)));
@@ -511,8 +537,8 @@ function renderList(){
   $('listBox').innerHTML=list.map(r=>`<div class="list-item">
     <div class="t"><div class="site">${esc(r.site)}</div><div class="d">${krDate(r.date)}<br>${esc(r.start||'')}${r.end?'~'+esc(r.end):''}</div></div>
     <div style="font-size:12px;color:var(--sub);margin-top:2px">${esc([r.kind,r.company].filter(Boolean).join(' · '))}</div>
-    <div>${r.tasks.map(t=>`<span class="tag tg-${t}">${TASKS[t]}</span>`).join('')}${(r.photos||[]).length?`<span class="tag" style="background:#889">📷${r.photos.length}</span>`:''}</div>
-    <div style="font-size:13px;margin-top:6px">${esc(summaryLine(r))}</div>
+    <div>${r.tasks.map(t=>`<span class="tag tg-${t}">${TASKS[t]}</span>`).join('')}</div>
+    <div style="font-size:13px;margin-top:6px">${esc(summaryLine(r))}</div>${photoSummary(r)}
     <div class="acts">
       <button class="btn sm" onclick="exportRecordDoc('${r.id}')">📄 일지 파일</button>
       <button class="btn sm sec" onclick="editRecord('${r.id}')">✏️ 수정</button>
@@ -548,7 +574,7 @@ const DOC_CSS = `body{font-family:'맑은 고딕','Malgun Gothic',sans-serif;fon
 h1{font-size:18pt;text-align:center;margin:0 0 6pt}h2{font-size:13pt;margin:14pt 0 6pt;border-bottom:1.5pt solid #16365C;color:#16365C}
 table{border-collapse:collapse;width:100%;margin:4pt 0}th,td{border:1px solid #777;padding:4pt 6pt;font-size:10pt;vertical-align:top}
 th{background:#E7ECF3;width:22%;text-align:center}.c td,.c th{text-align:center;width:auto}.meta{text-align:right;font-size:10pt;color:#444}
-img{width:300px;height:auto;margin:3px}p{margin:3pt 0}`;
+img{width:300px;height:auto;margin:3px}.nb td,.nb th{border:0}.nb img{width:100%;max-width:300px}p{margin:3pt 0}`;
 function docWrap(title,body){
   return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${DOC_CSS}</style></head><body>${body}</body></html>`;
 }
@@ -606,11 +632,12 @@ async function htmlToDocx(html){
   const TOTAL=9638;
   function tbl(t){
     const trs=[...t.querySelectorAll('tr')]; if(!trs.length) return '';
-    const isC=t.classList.contains('c'); const ncol=Math.max(...trs.map(r=>r.children.length));
+    const isC=t.classList.contains('c'), nb=t.classList.contains('nb'); const ncol=Math.max(...trs.map(r=>r.children.length));
     let w=[];
-    if(!isC&&ncol===2) w=[2100,TOTAL-2100];
+    if(nb) w=new Array(ncol).fill(Math.floor(TOTAL/ncol));
+    else if(!isC&&ncol===2) w=[2100,TOTAL-2100];
     else{ const wt=new Array(ncol).fill(4); trs.forEach(r=>[...r.children].forEach((c,i)=>{ const tx=c.textContent.trim(); let len=0; for(const ch of tx) len+=/[\u3131-\uD7A3]/.test(ch)?2:1; wt[i]=Math.max(wt[i],Math.min(len,40)); })); const s=wt.reduce((a,b)=>a+b,0); w=wt.map(x=>Math.round(TOTAL*x/s)); }
-    let x=`<w:tbl><w:tblPr><w:tblW w:w="${TOTAL}" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblBorders>${['top','left','bottom','right','insideH','insideV'].map(s=>`<w:${s} w:val="single" w:sz="4" w:space="0" w:color="777777"/>`).join('')}</w:tblBorders><w:tblCellMar><w:top w:w="40" w:type="dxa"/><w:left w:w="90" w:type="dxa"/><w:bottom w:w="40" w:type="dxa"/><w:right w:w="90" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${w.map(v=>`<w:gridCol w:w="${v}"/>`).join('')}</w:tblGrid>`;
+    let x=`<w:tbl><w:tblPr><w:tblW w:w="${TOTAL}" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblBorders>${['top','left','bottom','right','insideH','insideV'].map(s=>nb?`<w:${s} w:val="nil"/>`:`<w:${s} w:val="single" w:sz="4" w:space="0" w:color="777777"/>`).join('')}</w:tblBorders><w:tblCellMar><w:top w:w="40" w:type="dxa"/><w:left w:w="90" w:type="dxa"/><w:bottom w:w="40" w:type="dxa"/><w:right w:w="90" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${w.map(v=>`<w:gridCol w:w="${v}"/>`).join('')}</w:tblGrid>`;
     trs.forEach(r=>{ x+='<w:tr><w:trPr><w:cantSplit/></w:trPr>'; [...r.children].forEach((c,i)=>{
       const th=c.tagName==='TH'; const left=/text-align:\s*left/.test(c.getAttribute('style')||'');
       const jc=th?'center':(isC&&!left?'center':'left');
@@ -643,6 +670,13 @@ async function htmlToDocx(html){
 async function saveDocx(bodyHtml,name){ try{ saveFile(await htmlToDocx(bodyHtml),name); }catch(e){ console.error(e); toast('워드 파일 만들기에 실패했습니다'); } }
 const writer = () => esc([SET.dept,SET.pos,SET.name].filter(Boolean).join(' '));
 
+/* ---- 사진 배치 ---- */
+function photoGrid(list){ let h='<table class="nb c">'; for(let i=0;i<list.length;i+=2){ h+='<tr>'+[list[i],list[i+1]].map((p,k)=>p?`<td><img src="${p.data}" width="300"><br>${p.cap?`${i+k+1}. ${esc(p.cap)}`:`사진 ${i+k+1}`}</td>`:'<td></td>').join('')+'</tr>'; } return h+'</table>'; }
+function photoBlock(r,t,on){ if(!on) return ''; const g=photoGroup(r)[t]; return g.length?`<p><b>▶ 현장 사진 (${g.length}장)</b></p>`+photoGrid(g):''; }
+function ledgerHTML(list,n){ let h=''; PH_ORDER.forEach(t=>{ const rows=list.map(r=>[r,photoGroup(r)[t]]).filter(x=>x[1].length); const tot=rows.reduce((a,x)=>a+x[1].length,0);
+  h+=`<h2>${n++}. ${PH_TASKS[t]} 사진 (${tot}장)</h2>`; if(!tot){ h+='<p>해당 사진 없음</p>'; return; }
+  rows.forEach(([r,ps])=>{ h+=`<p><b>${krDate(r.date)} · ${esc(r.site)}</b></p>`+photoGrid(ps); }); }); return h; }
+
 /* ---- 1건 업무일지 ---- */
 function recordBody(r,withPhotos=true){
   let h=`<table>
@@ -655,15 +689,19 @@ function recordBody(r,withPhotos=true){
   if(r.insp) h+=`<h2>현장안전점검</h2><table><tr><th>점검 분야</th><td>${esc(r.insp.areas.join(', ')||'-')}</td></tr>
     <tr><th>지적사항</th><td>${r.insp.count}건 (${esc(r.insp.action)})</td></tr><tr><th>지적 및 조치내용</th><td>${nl(r.insp.items)||'-'}</td></tr>
     <tr><th>양호 사항</th><td>${esc(r.insp.good)||'-'}</td></tr></table>`;
+  if(r.insp) h+=photoBlock(r,'insp',withPhotos);
   if(r.edu) h+=`<h2>안전교육 지원</h2><table><tr><th>교육 구분</th><td>${esc(r.edu.type)}</td></tr><tr><th>교육 주제</th><td>${esc(r.edu.topic)||'-'}</td></tr>
     <tr><th>인원 / 시간</th><td>${r.edu.people}명 / ${r.edu.minutes}분</td></tr></table>`;
+  if(r.edu) h+=photoBlock(r,'edu',withPhotos);
   if(r.risk) h+=`<h2>위험성평가 지원</h2><table><tr><th>평가 유형</th><td>${esc(r.risk.type)}</td></tr><tr><th>대상 공정</th><td>${esc(r.risk.process)||'-'}</td></tr>
     <tr><th>발굴 / 대책</th><td>유해·위험요인 ${r.risk.hazards}건 / 개선대책 ${r.risk.measures}건</td></tr><tr><th>주요 내용</th><td>${nl(r.risk.detail)||'-'}</td></tr></table>`;
+  if(r.risk) h+=photoBlock(r,'risk',withPhotos);
   if(r.tbm) h+=`<h2>TBM 실시 지원</h2><table><tr><th>참여 / 시간</th><td>${r.tbm.people}명 / ${r.tbm.minutes}분</td></tr><tr><th>주관자</th><td>${esc(r.tbm.leader)||'-'}</td></tr>
     <tr><th>전달사항</th><td>${nl(r.tbm.content)||'-'}</td></tr></table>`;
+  if(r.tbm) h+=photoBlock(r,'tbm',withPhotos);
   h+=`<h2>종합 의견 및 후속조치</h2><table><tr><th>종합 의견</th><td>${nl(r.note)||'-'}</td></tr>
     <tr><th>후속조치</th><td>${r.follow?`${esc(r.followText)}${r.followDate?' (이행확인 예정: '+krDate(r.followDate)+')':''}${r.followDone?' — 완료':''}`:'해당 없음'}</td></tr></table>`;
-  if(withPhotos && (r.photos||[]).length) h+=`<h2>현장 사진</h2><p>${r.photos.map(p=>`<img src="${p.data}" width="300">`).join(' ')}</p>`;
+  if(withPhotos){ const g=photoGroup(r); if(g.etc.length) h+=`<h2>현장 사진 (기타·공통)</h2>`+photoGrid(g.etc); }
   return h;
 }
 function exportRecordDoc(id){
@@ -696,26 +734,28 @@ function periodLabel(){ const f=$('p-from').value, t=$('p-to').value;
 function calc(list){
   const s={visits:list.length, sites:new Set(list.map(r=>r.site)).size, days:new Set(list.map(r=>r.date)).size,
     insp:0,inspIssues:0,inspFixed:0, edu:0,eduPeople:0,eduMin:0, risk:0,riskHaz:0,riskMea:0, tbm:0,tbmPeople:0,
-    follow:0,followDone:0, photos:0, bySite:{}, areas:{}};
+    follow:0,followDone:0, photos:0, photoBy:{insp:0,edu:0,risk:0,tbm:0,etc:0}, bySite:{}, areas:{}};
   list.forEach(r=>{
     if(r.insp){ s.insp++; s.inspIssues+=r.insp.count; if(/즉시/.test(r.insp.action)) s.inspFixed+=r.insp.count; r.insp.areas.forEach(a=>s.areas[a]=(s.areas[a]||0)+1); }
     if(r.edu){ s.edu++; s.eduPeople+=r.edu.people; s.eduMin+=r.edu.minutes; }
     if(r.risk){ s.risk++; s.riskHaz+=r.risk.hazards; s.riskMea+=r.risk.measures; }
     if(r.tbm){ s.tbm++; s.tbmPeople+=r.tbm.people; }
     if(r.follow){ s.follow++; if(r.followDone) s.followDone++; }
-    s.photos+=(r.photos||[]).length;
+    s.photos+=(r.photos||[]).length; { const g=photoGroup(r); PH_ORDER.forEach(t=>s.photoBy[t]+=g[t].length); }
     const b=s.bySite[r.site]||(s.bySite[r.site]={n:0,kind:r.kind,company:r.company,insp:0,edu:0,risk:0,tbm:0,issues:0,last:''});
     b.n++; r.tasks.forEach(t=>b[t]++); if(r.insp) b.issues+=r.insp.count; if(r.date>b.last) b.last=r.date;
   });
   return s;
 }
 function taskTableHTML(s){
-  return `<table class="c"><tr><th>구분</th><th>건수</th><th>주요 실적</th></tr>
-  <tr><td>현장안전점검</td><td>${s.insp}</td><td>지적 ${s.inspIssues}건 (즉시시정 ${s.inspFixed}건)</td></tr>
-  <tr><td>안전교육 지원</td><td>${s.edu}</td><td>${s.eduPeople}명 / ${s.eduMin}분</td></tr>
-  <tr><td>위험성평가 지원</td><td>${s.risk}</td><td>요인 ${s.riskHaz}건 / 대책 ${s.riskMea}건</td></tr>
-  <tr><td>TBM 실시 지원</td><td>${s.tbm}</td><td>참여 ${s.tbmPeople}명</td></tr>
-  <tr><th>계</th><th>${s.insp+s.edu+s.risk+s.tbm}</th><th>현장 ${s.sites}개소 / 방문 ${s.visits}회</th></tr></table>`;
+  const pb=s.photoBy;
+  return `<table class="c"><tr><th>구분</th><th>건수</th><th>주요 실적</th><th>사진</th></tr>
+  <tr><td>현장안전점검</td><td>${s.insp}</td><td>지적 ${s.inspIssues}건 (즉시시정 ${s.inspFixed}건)</td><td>${pb.insp}</td></tr>
+  <tr><td>안전교육 지원</td><td>${s.edu}</td><td>${s.eduPeople}명 / ${s.eduMin}분</td><td>${pb.edu}</td></tr>
+  <tr><td>위험성평가 지원</td><td>${s.risk}</td><td>요인 ${s.riskHaz}건 / 대책 ${s.riskMea}건</td><td>${pb.risk}</td></tr>
+  <tr><td>TBM 실시 지원</td><td>${s.tbm}</td><td>참여 ${s.tbmPeople}명</td><td>${pb.tbm}</td></tr>
+  ${pb.etc?`<tr><td>기타·공통 사진</td><td>-</td><td>-</td><td>${pb.etc}</td></tr>`:''}
+  <tr><th>계</th><th>${s.insp+s.edu+s.risk+s.tbm}</th><th>현장 ${s.sites}개소 / 방문 ${s.visits}회</th><th>${s.photos}</th></tr></table>`;
 }
 function siteTableHTML(s){
   const rows=Object.entries(s.bySite).sort((a,b)=>b[1].n-a[1].n);
@@ -730,7 +770,7 @@ function renderStats(){
   syncRepTitle();
 }
 $('repType').onchange=syncRepTitle;
-function syncRepTitle(){ const t={perf:'현장 안전관리 지원 실적 보고',site:'현장별 안전관리 지원 결과 보고',issue:'현장 안전점검 지적사항 및 조치 현황'}[$('repType').value]; $('repTitle').value=`${periodLabel()} ${t}`; }
+function syncRepTitle(){ const t={perf:'현장 안전관리 지원 실적 보고',site:'현장별 안전관리 지원 결과 보고',issue:'현장 안전점검 지적사항 및 조치 현황',photo:'업무별 현장 사진 대장'}[$('repType').value]; $('repTitle').value=`${periodLabel()} ${t}`; }
 
 /* ================= 보고서 ================= */
 function buildReport(){
@@ -756,18 +796,21 @@ function buildReport(){
     <p>○ 미이행 지적사항에 대한 이행 확인 및 재점검 실시</p>
     <p>○ 취약 분야 중심의 계절별·공종별 맞춤형 안전교육 및 TBM 정착 지원</p>
     <p>○ 위험성평가 미흡 현장에 대한 근로자 참여형 위험성평가 지원 확대</p>
-    <h2>붙임. 현장 지원 세부 내역</h2>${detailTable(list)}`;
+    <h2>붙임. 현장 지원 세부 내역</h2>${detailTable(list)}`+(ph?`<h2>붙임. 업무별 현장 사진 대장</h2>`+ledgerHTML(list,1):'');
   } else if(type==='site'){
     h+=`<h2>1. 개요</h2><p>○ 기간: ${krDate($('p-from').value)} ~ ${krDate($('p-to').value)}</p><p>○ 지원 현장: ${s.sites}개소, 방문 ${s.visits}회</p>
     <h2>2. 현장별 요약</h2>${siteTableHTML(s)}<h2>3. 현장별 세부 결과</h2>`;
     list.forEach((r,i)=>{ h+=`<h2 style="font-size:12pt;border:0">${i+1}) ${esc(r.site)} — ${krDate(r.date)}</h2>${recordBody(r,ph)}`; });
+  } else if(type==='photo'){
+    h+=`<h2>1. 개요</h2><p>○ 기간: ${krDate($('p-from').value)} ~ ${krDate($('p-to').value)}</p>
+    <p>○ 사진 ${s.photos}장 (점검 ${s.photoBy.insp} · 교육 ${s.photoBy.edu} · 위험성평가 ${s.photoBy.risk} · TBM ${s.photoBy.tbm} · 기타 ${s.photoBy.etc})</p>`+ledgerHTML(list,2);
   } else {
     const iss=list.filter(r=>r.insp);
     h+=`<h2>1. 개요</h2><p>○ 기간: ${krDate($('p-from').value)} ~ ${krDate($('p-to').value)}</p>
     <p>○ 점검 ${s.insp}회, 지적사항 ${s.inspIssues}건 (즉시시정 ${s.inspFixed}건)</p>${topAreas?`<p>○ 주요 취약 분야: ${esc(topAreas)}</p>`:''}
     <h2>2. 지적사항 및 조치 현황</h2><table class="c"><tr><th>연번</th><th>일자</th><th>현장명</th><th>점검분야</th><th>지적사항 및 조치</th><th>건수</th><th>조치결과</th><th>후속조치</th></tr>
     ${iss.map((r,i)=>`<tr><td>${i+1}</td><td>${r.date.slice(5).replace('-','.')}</td><td>${esc(r.site)}</td><td>${esc(r.insp.areas.join(', '))}</td><td style="text-align:left">${nl(r.insp.items)}</td><td>${r.insp.count}</td><td>${esc(r.insp.action)}</td><td>${r.follow?(r.followDone?'완료':'진행중'):'-'}</td></tr>`).join('')}</table>`;
-    if(ph){ const withP=iss.filter(r=>(r.photos||[]).length); if(withP.length) h+=`<h2>3. 현장 사진</h2>`+withP.map(r=>`<p><b>${esc(r.site)}</b> (${krDate(r.date)})<br>${r.photos.map(p=>`<img src="${p.data}" width="300">`).join(' ')}</p>`).join(''); }
+    if(ph){ const withP=iss.filter(r=>photoGroup(r).insp.length); if(withP.length) h+=`<h2>3. 현장 사진</h2>`+withP.map(r=>`<p><b>${esc(r.site)}</b> (${krDate(r.date)})</p>`+photoGrid(photoGroup(r).insp)).join(''); }
   }
   $('repPreview').innerHTML=`<style>${DOC_CSS.replace(/body\{[^}]*\}/,'')}</style>`+h;
   $('repWrap').classList.remove('hidden'); $('repPreview').scrollIntoView({behavior:'smooth'});
@@ -789,12 +832,12 @@ function exportCSV(){
   const head=['연번','방문일자','시작','종료','현장명','위치','공종','업체','현장관계자','수행업무',
     '점검여부','점검분야','지적건수','조치결과','지적·조치내용','교육여부','교육구분','교육주제','교육인원','교육시간(분)',
     '위험성평가여부','평가유형','대상공정','위험요인(건)','개선대책(건)','TBM여부','TBM인원','TBM시간(분)','TBM전달사항',
-    '종합의견','후속조치','후속조치내용','이행확인예정일','이행완료','사진수'];
+    '종합의견','후속조치','후속조치내용','이행확인예정일','이행완료','사진수','점검사진','교육사진','위험성평가사진','TBM사진','기타사진','사진설명'];
   const q=v=>{ v=String(v??''); return /[",\n\r]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; };
   const rows=list.map((r,i)=>{ const a=r.insp||{},e=r.edu||{},k=r.risk||{},t=r.tbm||{}; return [i+1,r.date,r.start,r.end,r.site,r.addr,r.kind,r.company,r.contact,r.tasks.map(x=>TASKS[x]).join('/'),
     r.insp?'O':'',(a.areas||[]).join('/'),r.insp?a.count:'',a.action||'',a.items||'', r.edu?'O':'',e.type||'',e.topic||'',r.edu?e.people:'',r.edu?e.minutes:'',
     r.risk?'O':'',k.type||'',k.process||'',r.risk?k.hazards:'',r.risk?k.measures:'', r.tbm?'O':'',r.tbm?t.people:'',r.tbm?t.minutes:'',t.content||'',
-    r.note,r.follow?'O':'',r.followText,r.followDate,r.followDone?'O':'',(r.photos||[]).length].map(q).join(','); });
+    r.note,r.follow?'O':'',r.followText,r.followDate,r.followDone?'O':'',(r.photos||[]).length,...PH_ORDER.map(t=>photoGroup(r)[t].length),(r.photos||[]).map(p=>`[${PH_TASKS[ptask(p,r.tasks)]}] ${p.cap||''}`.trim()).join(' / ')].map(q).join(','); });
   saveFile(new Blob(['﻿'+[head.join(','),...rows].join('\r\n')],{type:'text/csv;charset=utf-8'}), `현장안전실적_${$('p-from').value}_${$('p-to').value}.csv`);
 }
 
