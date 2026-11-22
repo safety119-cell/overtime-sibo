@@ -261,7 +261,7 @@ th{background:#EEF2F7}
       <div class="hint">👇 초안을 눌러서 바로 고칠 수 있습니다. 다 고친 다음 파일로 저장하세요.</div>
       <div class="preview" id="repPreview" contenteditable="true"></div>
       <div class="row">
-        <button class="btn" onclick="exportReportDoc()">📘 한글/워드 파일(.doc)</button>
+        <button class="btn" onclick="exportReportDoc()">📘 워드 파일(.docx)</button>
         <button class="btn sec" onclick="printReport()">🖨️ 인쇄·PDF</button>
       </div>
     </div>
@@ -484,7 +484,7 @@ async function saveRecord(){
   const wasEdit=!!editingId;
   resetForm();
   toast(wasEdit?'수정했습니다':'저장했습니다');
-  if(confirm('업무일지 파일(.doc)을 지금 만들어 보관하시겠어요?\n(카톡·메일로 사무실 PC에 보낼 수 있습니다)')) exportRecordDoc(r.id);
+  if(confirm('업무일지 워드 파일(.docx)을 지금 만들어 보관하시겠어요?\n(카톡·메일로 사무실 PC에 보낼 수 있습니다)')) exportRecordDoc(r.id);
   show('list');
 }
 
@@ -552,7 +552,95 @@ img{width:300px;height:auto;margin:3px}p{margin:3pt 0}`;
 function docWrap(title,body){
   return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${DOC_CSS}</style></head><body>${body}</body></html>`;
 }
-const docBlob = html => new Blob(['﻿',html],{type:'application/msword'});
+
+/* ================= 진짜 워드 파일(.docx) 만들기 (외부 라이브러리 없음) ================= */
+const CRC_T=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+const crc32=b=>{let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRC_T[(c^b[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;};
+function zipStore(files){ // files:[{name,data:Uint8Array}]
+  const enc=new TextEncoder(), parts=[], cen=[]; let off=0;
+  const now=new Date(), dt=((now.getHours()<<11)|(now.getMinutes()<<5)|(now.getSeconds()>>1)), dd=(((now.getFullYear()-1980)<<9)|((now.getMonth()+1)<<5)|now.getDate());
+  for(const f of files){
+    const nm=enc.encode(f.name), crc=crc32(f.data), sz=f.data.length;
+    const lh=new DataView(new ArrayBuffer(30)); lh.setUint32(0,0x04034b50,true); lh.setUint16(4,20,true); lh.setUint16(6,0x0800,true); lh.setUint16(8,0,true);
+    lh.setUint16(10,dt,true); lh.setUint16(12,dd,true); lh.setUint32(14,crc,true); lh.setUint32(18,sz,true); lh.setUint32(22,sz,true); lh.setUint16(26,nm.length,true); lh.setUint16(28,0,true);
+    parts.push(new Uint8Array(lh.buffer),nm,f.data);
+    const ch=new DataView(new ArrayBuffer(46)); ch.setUint32(0,0x02014b50,true); ch.setUint16(4,20,true); ch.setUint16(6,20,true); ch.setUint16(8,0x0800,true); ch.setUint16(10,0,true);
+    ch.setUint16(12,dt,true); ch.setUint16(14,dd,true); ch.setUint32(16,crc,true); ch.setUint32(20,sz,true); ch.setUint32(24,sz,true); ch.setUint16(28,nm.length,true); ch.setUint32(42,off,true);
+    cen.push(new Uint8Array(ch.buffer),nm); off+=30+nm.length+sz;
+  }
+  let cs=0; cen.forEach(x=>cs+=x.length);
+  const e=new DataView(new ArrayBuffer(22)); e.setUint32(0,0x06054b50,true); e.setUint16(8,files.length,true); e.setUint16(10,files.length,true); e.setUint32(12,cs,true); e.setUint32(16,off,true);
+  return new Blob([...parts,...cen,new Uint8Array(e.buffer)],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+}
+const xe=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'');
+function dataUriBytes(u){const b=atob(u.split(',')[1]);const a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a;}
+function imgSize(u){return new Promise(res=>{const i=new Image();i.onload=()=>res([i.naturalWidth,i.naturalHeight]);i.onerror=()=>res([4,3]);i.src=u;});}
+
+async function htmlToDocx(html){
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  const media=[]; // {name,data}
+  const imgInfo=new Map();
+  for(const im of doc.body.querySelectorAll('img')){
+    const src=im.getAttribute('src')||''; if(!src.startsWith('data:image')) continue;
+    const [w,h]=await imgSize(src); media.push({name:`image${media.length+1}.jpg`,data:dataUriBytes(src)});
+    imgInfo.set(im,{rid:'rIdImg'+media.length,n:media.length,w,h});
+  }
+  let imgId=0;
+  const rPr=o=>{let s='';if(o.b)s+='<w:b/>';if(o.color)s+=`<w:color w:val="${o.color}"/>`;if(o.sz)s+=`<w:sz w:val="${o.sz}"/><w:szCs w:val="${o.sz}"/>`;return s?`<w:rPr>${s}</w:rPr>`:'';};
+  function runs(node,o){
+    let out='';
+    for(const c of node.childNodes){
+      if(c.nodeType===3){ const t=c.nodeValue.replace(/\u00a0/g,' ').replace(/\s+/g,' '); if(t.trim()===''&&!t.includes(' ')) continue; out+=`<w:r>${rPr(o)}<w:t xml:space="preserve">${xe(t)}</w:t></w:r>`; }
+      else if(c.nodeType===1){
+        const tg=c.tagName;
+        if(tg==='BR') out+='<w:r><w:br/></w:r>';
+        else if(tg==='IMG'){ const f=imgInfo.get(c); if(!f) continue; const cx=Math.round(300*9525), cy=Math.round(cx*f.h/f.w); imgId++;
+          out+=`<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${imgId}" name="사진${imgId}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${imgId}" name="image${f.n}.jpg"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${f.rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r><w:r><w:t xml:space="preserve"> </w:t></w:r>`; }
+        else if(tg==='STYLE'||tg==='SCRIPT') continue;
+        else out+=runs(c,(tg==='B'||tg==='STRONG')?{...o,b:true}:o);
+      }
+    }
+    return out;
+  }
+  const para=(inner,{jc,spBefore=40,spAfter=40,border,keep}={})=>`<w:p><w:pPr>${keep?'<w:keepNext/>':''}${border?'<w:pBdr><w:bottom w:val="single" w:sz="12" w:space="2" w:color="16365C"/></w:pBdr>':''}<w:spacing w:before="${spBefore}" w:after="${spAfter}"/>${jc?`<w:jc w:val="${jc}"/>`:''}</w:pPr>${inner}</w:p>`;
+  const TOTAL=9638;
+  function tbl(t){
+    const trs=[...t.querySelectorAll('tr')]; if(!trs.length) return '';
+    const isC=t.classList.contains('c'); const ncol=Math.max(...trs.map(r=>r.children.length));
+    let w=[];
+    if(!isC&&ncol===2) w=[2100,TOTAL-2100];
+    else{ const wt=new Array(ncol).fill(4); trs.forEach(r=>[...r.children].forEach((c,i)=>{ const tx=c.textContent.trim(); let len=0; for(const ch of tx) len+=/[\u3131-\uD7A3]/.test(ch)?2:1; wt[i]=Math.max(wt[i],Math.min(len,40)); })); const s=wt.reduce((a,b)=>a+b,0); w=wt.map(x=>Math.round(TOTAL*x/s)); }
+    let x=`<w:tbl><w:tblPr><w:tblW w:w="${TOTAL}" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblBorders>${['top','left','bottom','right','insideH','insideV'].map(s=>`<w:${s} w:val="single" w:sz="4" w:space="0" w:color="777777"/>`).join('')}</w:tblBorders><w:tblCellMar><w:top w:w="40" w:type="dxa"/><w:left w:w="90" w:type="dxa"/><w:bottom w:w="40" w:type="dxa"/><w:right w:w="90" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${w.map(v=>`<w:gridCol w:w="${v}"/>`).join('')}</w:tblGrid>`;
+    trs.forEach(r=>{ x+='<w:tr><w:trPr><w:cantSplit/></w:trPr>'; [...r.children].forEach((c,i)=>{
+      const th=c.tagName==='TH'; const left=/text-align:\s*left/.test(c.getAttribute('style')||'');
+      const jc=th?'center':(isC&&!left?'center':'left');
+      x+=`<w:tc><w:tcPr><w:tcW w:w="${w[i]||1000}" w:type="dxa"/>${th?'<w:shd w:val="clear" w:color="auto" w:fill="E7ECF3"/>':''}</w:tcPr>${para(runs(c,{b:th,sz:20}),{jc,spBefore:0,spAfter:0})}</w:tc>`; });
+      x+='</w:tr>'; });
+    return x+'</w:tbl>'+para('',{spBefore:0,spAfter:60});
+  }
+  let body='';
+  for(const n of doc.body.childNodes){
+    if(n.nodeType!==1) continue; const tg=n.tagName;
+    if(tg==='STYLE') continue;
+    if(tg==='H1') body+=para(runs(n,{b:true,sz:36}),{jc:'center',spAfter:120});
+    else if(tg==='H2') body+=para(runs(n,{b:true,sz:26,color:'16365C'}),{spBefore:240,spAfter:80,border:true,keep:true});
+    else if(tg==='TABLE') body+=tbl(n);
+    else if(tg==='P') body+=para(runs(n,n.classList.contains('meta')?{sz:20}:{}),{jc:n.classList.contains('meta')?'right':undefined});
+    else body+=para(runs(n,{}));
+  }
+  const NS='xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"';
+  const enc=new TextEncoder(), H='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  const files=[
+    {name:'[Content_Types].xml',data:enc.encode(`${H}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpg" ContentType="image/jpeg"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>`)},
+    {name:'_rels/.rels',data:enc.encode(`${H}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`)},
+    {name:'word/_rels/document.xml.rels',data:enc.encode(`${H}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdSt" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>${media.map((m,i)=>`<Relationship Id="rIdImg${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${m.name}"/>`).join('')}</Relationships>`)},
+    {name:'word/styles.xml',data:enc.encode(`${H}<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="맑은 고딕" w:hAnsi="맑은 고딕" w:eastAsia="맑은 고딕" w:cs="맑은 고딕"/><w:sz w:val="21"/><w:szCs w:val="21"/><w:lang w:val="ko-KR" w:eastAsia="ko-KR"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="40" w:line="300" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style></w:styles>`)},
+    {name:'word/document.xml',data:enc.encode(`${H}<w:document ${NS}><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr></w:body></w:document>`)},
+    ...media.map(m=>({name:'word/media/'+m.name,data:m.data}))
+  ];
+  return zipStore(files);
+}
+async function saveDocx(bodyHtml,name){ try{ saveFile(await htmlToDocx(bodyHtml),name); }catch(e){ console.error(e); toast('워드 파일 만들기에 실패했습니다'); } }
 const writer = () => esc([SET.dept,SET.pos,SET.name].filter(Boolean).join(' '));
 
 /* ---- 1건 업무일지 ---- */
@@ -581,7 +669,7 @@ function recordBody(r,withPhotos=true){
 function exportRecordDoc(id){
   const r=RECORDS.find(x=>x.id===id); if(!r) return;
   const body=`<h1>현장 안전관리 지원 업무일지</h1><p class="meta">작성자: ${writer()||'-'} &nbsp; 작성일: ${krDate(today())}</p>${recordBody(r)}`;
-  saveFile(docBlob(docWrap('업무일지',body)), `업무일지_${r.date}_${safeName(r.site)}.doc`);
+  saveDocx(body, `업무일지_${r.date}_${safeName(r.site)}.docx`);
 }
 
 /* ================= 실적 집계 ================= */
@@ -688,7 +776,7 @@ function detailTable(list){
   return `<table class="c"><tr><th>연번</th><th>일자</th><th>현장명</th><th>수행업무</th><th>주요 내용</th></tr>${list.map((r,i)=>`<tr><td>${i+1}</td><td>${r.date.slice(5).replace('-','.')}</td><td>${esc(r.site)}</td><td>${r.tasks.map(t=>TASKS[t].replace(/ 지원| 실시 지원/,'')).join(', ')}</td><td style="text-align:left">${esc(summaryLine(r))}</td></tr>`).join('')}</table>`;
 }
 function reportHTML(){ const c=$('repPreview').cloneNode(true); c.querySelectorAll('style').forEach(x=>x.remove()); return c.innerHTML; }
-function exportReportDoc(){ saveFile(docBlob(docWrap($('repTitle').value,reportHTML())), `${safeName($('repTitle').value)}.doc`); }
+function exportReportDoc(){ saveDocx(reportHTML(), `${safeName($('repTitle').value)}.docx`); }
 function printReport(){
   const w=window.open('','_blank'); if(!w) return toast('팝업이 차단되었습니다');
   w.document.write(docWrap($('repTitle').value,reportHTML()).replace('</style>','@page{size:A4;margin:18mm}</style>')); w.document.close();
