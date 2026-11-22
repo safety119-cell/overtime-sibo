@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#16365C">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="현장안전일지">
+<title>현장안전 업무일지</title>
+<style>
+:root{
+  --navy:#16365C; --navy2:#22507F; --orange:#F28C28; --bg:#F3F5F8; --card:#fff;
+  --text:#1B2430; --sub:#5B6675; --line:#DDE2E9; --ok:#1E8E5A; --warn:#C0392B;
+  --c1:#2E6FD8; --c2:#1E8E5A; --c3:#8E44AD; --c4:#E67E22;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;font-size:16px}
+header{position:sticky;top:0;z-index:20;background:var(--navy);color:#fff;padding:calc(10px + env(safe-area-inset-top)) 16px 10px}
+header h1{margin:0;font-size:18px;letter-spacing:-.3px}
+header .who{font-size:12px;opacity:.8;margin-top:2px}
+main{padding:12px 16px calc(90px + env(safe-area-inset-bottom));max-width:720px;margin:0 auto}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:30;background:#fff;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;background:none;padding:8px 0 10px;font-size:12px;color:var(--sub);display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button .ic{font-size:21px;line-height:1}
+nav button.on{color:var(--navy);font-weight:700}
+.card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card h2{font-size:15px;margin:0 0 10px;color:var(--navy);display:flex;align-items:center;gap:6px}
+label{display:block;font-size:13px;color:var(--sub);margin:10px 0 4px}
+input,select,textarea{width:100%;font-size:16px;padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--text);font-family:inherit}
+textarea{min-height:72px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--navy2);border-color:transparent}
+.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:12px;padding:13px 14px;font-size:15px;font-weight:700;background:var(--navy);color:#fff;width:100%;margin-top:8px;font-family:inherit}
+.btn.sec{background:#E8EDF4;color:var(--navy)}
+.btn.or{background:var(--orange)}
+.btn.red{background:#FBE9E7;color:var(--warn)}
+.btn.sm{width:auto;padding:8px 12px;font-size:13px;margin:0;border-radius:9px}
+.tasks{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.task{border:2px solid var(--line);border-radius:12px;padding:12px 8px;text-align:center;font-weight:700;font-size:14px;background:#fff;user-select:none}
+.task .e{font-size:24px;display:block;margin-bottom:3px}
+.task.on{border-color:var(--navy);background:#EAF1FA;color:var(--navy)}
+.sub{border-left:4px solid var(--navy);padding-left:12px;margin-top:12px}
+.sub h3{font-size:14px;margin:0 0 2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);border-radius:20px;padding:7px 11px;font-size:13px;background:#fff;user-select:none}
+.chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.hint{font-size:12px;color:var(--sub);margin-top:6px;line-height:1.5}
+.photos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.photos div{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#eee}
+.photos img{width:100%;height:100%;object-fit:cover}
+.photos button{position:absolute;top:3px;right:3px;border:0;border-radius:50%;width:24px;height:24px;background:rgba(0,0,0,.6);color:#fff;font-size:14px;line-height:24px;padding:0}
+.list-item{background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.list-item .t{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.list-item .site{font-weight:700;font-size:15px}
+.list-item .d{font-size:12px;color:var(--sub);white-space:nowrap}
+.tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:10px;margin:6px 4px 0 0;color:#fff}
+.tg-insp{background:var(--c1)}.tg-edu{background:var(--c2)}.tg-risk{background:var(--c3)}.tg-tbm{background:var(--c4)}
+.acts{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.stat{background:#F6F8FB;border-radius:10px;padding:10px}
+.stat b{display:block;font-size:22px;color:var(--navy)}
+.stat span{font-size:12px;color:var(--sub)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border:1px solid var(--line);padding:6px;text-align:center}
+th{background:#EEF2F7}
+.preview{border:1px dashed var(--line);border-radius:10px;padding:12px;font-size:14px;line-height:1.6;max-height:420px;overflow:auto;background:#fff}
+.preview:focus{outline:2px solid var(--orange)}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:rgba(20,30,45,.92);color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;z-index:99;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%}
+.toast.show{opacity:1}
+.hidden{display:none!important}
+.search{display:flex;gap:6px;margin-bottom:10px}
+.empty{text-align:center;color:var(--sub);padding:40px 0;font-size:14px}
+.switch{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:14px}
+.switch input{width:20px;height:20px}
+.seg{display:flex;background:#E8EDF4;border-radius:10px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:none;padding:8px;border-radius:8px;font-size:13px;font-family:inherit;color:var(--sub)}
+.seg button.on{background:#fff;color:var(--navy);font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.edit-banner{background:#FFF4E5;color:#8A4B00;border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+</style>
+</head>
+<body>
+<header>
+  <h1>🦺 현장안전 업무일지</h1>
+  <div class="who" id="whoLine">금천구청 안전관리자</div>
+</header>
+
+<main>
+<!-- ============ 1. 입력 ============ -->
+<section id="v-input">
+  <div class="edit-banner hidden" id="editBanner"><span>✏️ 기존 기록을 수정하는 중입니다</span><button class="btn sm sec" onclick="resetForm()">새 기록</button></div>
+
+  <div class="card">
+    <h2>📍 방문 기본정보</h2>
+    <div class="row">
+      <div><label>방문일자</label><input type="date" id="f-date"></div>
+    </div>
+    <div class="row">
+      <div><label>시작</label><input type="time" id="f-start"></div>
+      <div><label>종료</label><input type="time" id="f-end"></div>
+    </div>
+    <label>현장명 *</label>
+    <input id="f-site" list="siteList" placeholder="예) ○○동 공동주택 신축공사">
+    <datalist id="siteList"></datalist>
+    <label>현장 위치</label>
+    <div class="row"><input id="f-addr" placeholder="주소 또는 위치"><button class="btn sm sec" style="flex:0 0 auto" onclick="getGPS()">📡 GPS</button></div>
+    <div class="row">
+      <div><label>공종/사업 구분</label>
+        <select id="f-kind"><option value="">선택</option><option>건축공사</option><option>토목공사</option><option>도로·굴착공사</option><option>철거·해체공사</option><option>전기·설비공사</option><option>조경·녹지</option><option>청소·환경</option><option>시설물 유지관리</option><option>공공근로·일자리사업</option><option>기타</option></select></div>
+      <div><label>업체(시공사)</label><input id="f-company" placeholder="업체명"></div>
+    </div>
+    <label>현장 관계자 (대리인/관리감독자)</label>
+    <input id="f-contact" placeholder="성명 / 직위">
+  </div>
+
+  <div class="card">
+    <h2>✅ 수행 업무 (복수 선택)</h2>
+    <div class="tasks" id="taskBtns">
+      <div class="task" data-t="insp"><span class="e">🔍</span>현장안전점검</div>
+      <div class="task" data-t="edu"><span class="e">📚</span>안전교육 지원</div>
+      <div class="task" data-t="risk"><span class="e">⚠️</span>위험성평가 지원</div>
+      <div class="task" data-t="tbm"><span class="e">🗣️</span>TBM 실시 지원</div>
+    </div>
+
+    <div class="sub hidden" id="s-insp">
+      <h3>🔍 현장안전점검</h3>
+      <label>점검 분야</label>
+      <div class="chips" data-group="inspAreas">
+        <span class="chip">추락</span><span class="chip">낙하·비래</span><span class="chip">끼임·협착</span><span class="chip">부딪힘</span><span class="chip">넘어짐</span><span class="chip">붕괴·무너짐</span><span class="chip">감전</span><span class="chip">화재·폭발</span><span class="chip">질식(밀폐공간)</span><span class="chip">건설기계·장비</span><span class="chip">개인보호구</span><span class="chip">온열·한랭질환</span><span class="chip">정리정돈</span><span class="chip">안전시설</span>
+      </div>
+      <div class="row">
+        <div><label>지적사항 수</label><input type="number" inputmode="numeric" min="0" id="i-count" value="0"></div>
+        <div><label>조치 결과</label>
+          <select id="i-action"><option>지적사항 없음</option><option>현장 즉시 시정</option><option>시정 요청(기한부)</option><option>일부 시정·일부 요청</option><option>작업중지 권고</option></select></div>
+      </div>
+      <label>주요 지적사항 / 조치내용</label>
+      <textarea id="i-items" placeholder="예) 2층 개구부 안전난간 미설치 → 즉시 설치 조치"></textarea>
+      <label>양호 사항</label>
+      <input id="i-good" placeholder="예) 안전대 착용 상태 양호">
+    </div>
+
+    <div class="sub hidden" id="s-edu">
+      <h3>📚 안전교육 지원</h3>
+      <label>교육 구분</label>
+      <select id="e-type"><option>정기교육</option><option>채용 시 교육</option><option>작업내용 변경 시 교육</option><option>특별교육</option><option>건설업 기초안전보건교육 안내</option><option>계절별 재해예방 교육</option><option>기타</option></select>
+      <label>교육 주제</label>
+      <input id="e-topic" placeholder="예) 동절기 질식·화재 예방">
+      <div class="row">
+        <div><label>교육 인원(명)</label><input type="number" inputmode="numeric" min="0" id="e-people" value="0"></div>
+        <div><label>교육 시간(분)</label><input type="number" inputmode="numeric" min="0" id="e-min" value="0"></div>
+      </div>
+      <div class="hint">※ 근로자 안전보건교육: 산업안전보건법 제29조</div>
+    </div>
+
+    <div class="sub hidden" id="s-risk">
+      <h3>⚠️ 위험성평가 지원</h3>
+      <label>평가 유형</label>
+      <select id="r-type"><option>최초평가</option><option>정기평가</option><option>수시평가</option><option>상시평가</option></select>
+      <label>대상 공정/작업</label>
+      <input id="r-process" placeholder="예) 거푸집 해체, 고소작업대 작업">
+      <div class="row">
+        <div><label>유해·위험요인 발굴(건)</label><input type="number" inputmode="numeric" min="0" id="r-hazards" value="0"></div>
+        <div><label>개선대책 수립(건)</label><input type="number" inputmode="numeric" min="0" id="r-measures" value="0"></div>
+      </div>
+      <label>주요 위험요인 및 감소대책</label>
+      <textarea id="r-detail" placeholder="예) 이동식 비계 바퀴 고정 미흡 → 브레이크 고정 및 아웃트리거 설치"></textarea>
+      <div class="hint">※ 위험성평가 실시: 산업안전보건법 제36조 / 「사업장 위험성평가에 관한 지침」(고용노동부 고시)</div>
+    </div>
+
+    <div class="sub hidden" id="s-tbm">
+      <h3>🗣️ TBM 실시 지원</h3>
+      <div class="row">
+        <div><label>참여 인원(명)</label><input type="number" inputmode="numeric" min="0" id="t-people" value="0"></div>
+        <div><label>소요 시간(분)</label><input type="number" inputmode="numeric" min="0" id="t-min" value="10"></div>
+      </div>
+      <label>TBM 주관자</label>
+      <input id="t-leader" placeholder="예) 작업반장 홍길동">
+      <label>당일 작업 및 주요 전달사항</label>
+      <textarea id="t-content" placeholder="예) 당일 고소작업 위험요인 공유, 안전대 체결 확인, 건강상태 확인"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📝 종합 의견 · 후속조치</h2>
+    <label>종합 의견 / 특이사항</label>
+    <textarea id="f-note" placeholder="현장 전반 안전관리 수준, 건의사항 등"></textarea>
+    <label class="switch"><input type="checkbox" id="f-follow"> 후속조치(재방문·이행확인) 필요</label>
+    <div id="followBox" class="hidden">
+      <div class="row">
+        <div><label>이행 확인 예정일</label><input type="date" id="f-followDate"></div>
+      </div>
+      <label>후속조치 내용</label>
+      <input id="f-followText" placeholder="예) 안전난간 설치 이행 사진 제출 요청">
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📷 현장 사진</h2>
+    <div class="row">
+      <button class="btn sec" onclick="document.getElementById('camIn').click()">📸 촬영</button>
+      <button class="btn sec" onclick="document.getElementById('galIn').click()">🖼️ 앨범</button>
+    </div>
+    <input type="file" id="camIn" accept="image/*" capture="environment" class="hidden">
+    <input type="file" id="galIn" accept="image/*" multiple class="hidden">
+    <div class="photos" id="photoBox"></div>
+    <div class="hint">사진은 자동으로 축소(가로 1280px)되어 휴대폰 안에 저장됩니다.</div>
+  </div>
+
+  <button class="btn or" onclick="saveRecord()">💾 저장하고 업무일지 파일 만들기</button>
+  <button class="btn sec" onclick="resetForm(true)">🧹 입력 초기화</button>
+</section>
+
+<!-- ============ 2. 기록 ============ -->
+<section id="v-list" class="hidden">
+  <div class="search">
+    <input id="q" placeholder="🔎 현장명·업체·내용 검색" oninput="renderList()">
+    <select id="qTask" style="max-width:120px" onchange="renderList()"><option value="">전체 업무</option><option value="insp">안전점검</option><option value="edu">안전교육</option><option value="risk">위험성평가</option><option value="tbm">TBM</option></select>
+  </div>
+  <div id="followList"></div>
+  <div id="listBox"></div>
+</section>
+
+<!-- ============ 3. 실적·보고서 ============ -->
+<section id="v-report" class="hidden">
+  <div class="card">
+    <h2>📅 집계 기간</h2>
+    <div class="seg" id="periodSeg">
+      <button data-p="month" class="on">이번 달</button><button data-p="prev">지난 달</button><button data-p="quarter">분기</button><button data-p="year">올해</button><button data-p="custom">직접</button>
+    </div>
+    <div class="row">
+      <div><label>시작일</label><input type="date" id="p-from"></div>
+      <div><label>종료일</label><input type="date" id="p-to"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📊 실적 요약</h2>
+    <div class="stats" id="statBox"></div>
+    <label style="margin-top:14px">업무별 실적</label>
+    <div id="taskTable"></div>
+    <label style="margin-top:14px">현장별 방문 현황</label>
+    <div id="siteTable"></div>
+  </div>
+
+  <div class="card">
+    <h2>📄 보고서 만들기</h2>
+    <label>보고서 종류</label>
+    <select id="repType">
+      <option value="perf">기간 실적 보고서 (월간·분기·연간)</option>
+      <option value="site">현장별 안전관리 지원 결과</option>
+      <option value="issue">주요 지적사항 및 조치 현황</option>
+    </select>
+    <label>보고서 제목</label>
+    <input id="repTitle">
+    <label class="switch"><input type="checkbox" id="repPhotos"> 현장 사진 포함 (파일 용량 커짐)</label>
+    <button class="btn" onclick="buildReport()">📝 보고서 초안 생성</button>
+    <div id="repWrap" class="hidden">
+      <div class="hint">👇 초안을 눌러서 바로 고칠 수 있습니다. 다 고친 다음 파일로 저장하세요.</div>
+      <div class="preview" id="repPreview" contenteditable="true"></div>
+      <div class="row">
+        <button class="btn" onclick="exportReportDoc()">📘 한글/워드 파일(.doc)</button>
+        <button class="btn sec" onclick="printReport()">🖨️ 인쇄·PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📈 엑셀 실적 자료</h2>
+    <button class="btn sec" onclick="exportCSV()">📥 기간 실적 상세 목록 (엑셀 CSV)</button>
+    <div class="hint">엑셀에서 바로 열립니다. 실적 집계, 피벗 분석, 내부 결재 첨부용으로 쓰세요.</div>
+  </div>
+</section>
+
+<!-- ============ 4. 설정 ============ -->
+<section id="v-set" class="hidden">
+  <div class="card">
+    <h2>👤 작성자 정보</h2>
+    <label>소속</label><input id="s-dept" placeholder="예) 금천구청 ○○과">
+    <label>직위</label><input id="s-pos" placeholder="예) 안전관리자">
+    <label>성명</label><input id="s-name" placeholder="성명">
+    <button class="btn" onclick="saveSettings()">저장</button>
+  </div>
+  <div class="card">
+    <h2>🗄️ 데이터 백업 · 옮기기</h2>
+    <div class="hint" style="margin-top:0">모든 기록은 <b>이 휴대폰 브라우저 안</b>에만 저장됩니다. 휴대폰 교체·브라우저 데이터 삭제 전에 꼭 백업하세요. 백업 파일을 사무실 PC에서 이 화면으로 불러오면 PC에서도 보고서를 만들 수 있습니다.</div>
+    <button class="btn sec" onclick="exportBackup()">📦 전체 백업 파일 저장 (.json)</button>
+    <button class="btn sec" onclick="document.getElementById('restoreIn').click()">📂 백업 파일 불러오기 (합치기)</button>
+    <input type="file" id="restoreIn" accept=".json,application/json" class="hidden">
+    <div class="hint" id="dbInfo"></div>
+  </div>
+  <div class="card">
+    <h2>📲 홈 화면에 추가</h2>
+    <div class="hint" style="margin-top:0">
+      · 안드로이드(크롬/삼성인터넷): 메뉴 ⋮ → <b>홈 화면에 추가</b><br>
+      · 아이폰(사파리): 공유 버튼 → <b>홈 화면에 추가</b><br>
+      앱처럼 아이콘을 눌러 바로 실행할 수 있습니다.</div>
+  </div>
+  <div class="card">
+    <h2>⚠️ 초기화</h2>
+    <button class="btn red" onclick="wipeAll()">모든 기록 삭제</button>
+  </div>
+</section>
+</main>
+
+<nav>
+  <button data-v="input" class="on"><span class="ic">✍️</span>입력</button>
+  <button data-v="list"><span class="ic">📋</span>기록</button>
+  <button data-v="report"><span class="ic">📊</span>실적·보고서</button>
+  <button data-v="set"><span class="ic">⚙️</span>설정</button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ================= 공통 ================= */
+const $ = id => document.getElementById(id);
+const TASKS = {insp:'현장안전점검', edu:'안전교육 지원', risk:'위험성평가 지원', tbm:'TBM 실시 지원'};
+const TASK_ORDER = ['insp','edu','risk','tbm'];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nl = s => esc(s).replace(/\n/g,'<br>');
+const pad = n => String(n).padStart(2,'0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today = () => ymd(new Date());
+const num = v => { const n = parseInt(v,10); return isNaN(n)||n<0 ? 0 : n; };
+const krDate = s => { if(!s) return ''; const [y,m,d]=s.split('-'); const w='일월화수목금토'[new Date(+y,+m-1,+d).getDay()]; return `${y}. ${+m}. ${+d}.(${w})`; };
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200); }
+function lsGet(k,def){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):def; }catch(e){ return def; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+
+/* ================= 저장소 (IndexedDB, 실패 시 메모리) ================= */
+let db = null, memStore = {};
+function openDB(){
+  return new Promise(res=>{
+    try{
+      const rq = indexedDB.open('gc-safety-log',1);
+      rq.onupgradeneeded = e => e.target.result.createObjectStore('records',{keyPath:'id'});
+      rq.onsuccess = e => { db = e.target.result; res(); };
+      rq.onerror = () => res();
+    }catch(e){ res(); }
+  });
+}
+function dbAll(){
+  if(!db) return Promise.resolve(Object.values(memStore));
+  return new Promise((res,rej)=>{ const rq=db.transaction('records').objectStore('records').getAll(); rq.onsuccess=()=>res(rq.result||[]); rq.onerror=()=>rej(rq.error); });
+}
+function dbPut(r){
+  if(!db){ memStore[r.id]=r; return Promise.resolve(); }
+  return new Promise((res,rej)=>{ const tx=db.transaction('records','readwrite'); tx.objectStore('records').put(r); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); });
+}
+function dbDel(id){
+  if(!db){ delete memStore[id]; return Promise.resolve(); }
+  return new Promise((res,rej)=>{ const tx=db.transaction('records','readwrite'); tx.objectStore('records').delete(id); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); });
+}
+function dbClear(){
+  if(!db){ memStore={}; return Promise.resolve(); }
+  return new Promise((res,rej)=>{ const tx=db.transaction('records','readwrite'); tx.objectStore('records').clear(); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); });
+}
+let RECORDS = [];
+async function reload(){ RECORDS = (await dbAll()).sort((a,b)=> (b.date+b.start).localeCompare(a.date+a.start)); updateSiteList(); }
+
+/* ================= 설정 ================= */
+let SET = lsGet('gcs-settings',{dept:'금천구청',pos:'안전관리자',name:''});
+function applySettings(){
+  $('s-dept').value=SET.dept||''; $('s-pos').value=SET.pos||''; $('s-name').value=SET.name||'';
+  $('whoLine').textContent=[SET.dept,SET.pos,SET.name].filter(Boolean).join(' · ') || '금천구청 안전관리자';
+}
+function saveSettings(){ SET={dept:$('s-dept').value.trim(),pos:$('s-pos').value.trim(),name:$('s-name').value.trim()}; lsSet('gcs-settings',SET); applySettings(); toast('작성자 정보를 저장했습니다'); }
+
+/* ================= 화면 전환 ================= */
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
+function show(v){
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  ['input','list','report','set'].forEach(x=>$('v-'+x).classList.toggle('hidden',x!==v));
+  if(v==='list') renderList();
+  if(v==='report') renderStats();
+  if(v==='set') $('dbInfo').textContent=`저장된 기록 ${RECORDS.length}건 · 사진 ${RECORDS.reduce((s,r)=>s+(r.photos||[]).length,0)}장`;
+  window.scrollTo(0,0);
+}
+
+/* ================= 입력 폼 ================= */
+let selTasks = new Set(), photos = [], editingId = null;
+document.querySelectorAll('.task').forEach(el=>el.onclick=()=>{
+  const t=el.dataset.t; selTasks.has(t)?selTasks.delete(t):selTasks.add(t); syncTasks(); saveDraft();
+});
+function syncTasks(){
+  document.querySelectorAll('.task').forEach(el=>el.classList.toggle('on',selTasks.has(el.dataset.t)));
+  TASK_ORDER.forEach(t=>$('s-'+t).classList.toggle('hidden',!selTasks.has(t)));
+}
+document.querySelectorAll('.chips .chip').forEach(c=>c.onclick=()=>{ c.classList.toggle('on'); saveDraft(); });
+const chipVals = g => [...document.querySelectorAll(`.chips[data-group="${g}"] .chip.on`)].map(c=>c.textContent);
+const setChips = (g,vals) => document.querySelectorAll(`.chips[data-group="${g}"] .chip`).forEach(c=>c.classList.toggle('on',(vals||[]).includes(c.textContent)));
+$('f-follow').onchange=()=>{ $('followBox').classList.toggle('hidden',!$('f-follow').checked); saveDraft(); };
+
+const FIELDS = ['f-date','f-start','f-end','f-site','f-addr','f-kind','f-company','f-contact','i-count','i-action','i-items','i-good',
+  'e-type','e-topic','e-people','e-min','r-type','r-process','r-hazards','r-measures','r-detail','t-people','t-min','t-leader','t-content',
+  'f-note','f-followDate','f-followText'];
+
+function collect(){
+  const v = id => $(id).value.trim();
+  const r = {
+    id: editingId || ('r'+Date.now()+Math.random().toString(36).slice(2,6)),
+    date:v('f-date'), start:v('f-start'), end:v('f-end'), site:v('f-site'), addr:v('f-addr'), kind:v('f-kind'),
+    company:v('f-company'), contact:v('f-contact'), tasks:TASK_ORDER.filter(t=>selTasks.has(t)),
+    note:v('f-note'), follow:$('f-follow').checked, followDate:v('f-followDate'), followText:v('f-followText'), followDone:false,
+    photos: photos.slice()
+  };
+  if(selTasks.has('insp')) r.insp={areas:chipVals('inspAreas'),count:num(v('i-count')),action:v('i-action'),items:v('i-items'),good:v('i-good')};
+  if(selTasks.has('edu')) r.edu={type:v('e-type'),topic:v('e-topic'),people:num(v('e-people')),minutes:num(v('e-min'))};
+  if(selTasks.has('risk')) r.risk={type:v('r-type'),process:v('r-process'),hazards:num(v('r-hazards')),measures:num(v('r-measures')),detail:v('r-detail')};
+  if(selTasks.has('tbm')) r.tbm={people:num(v('t-people')),minutes:num(v('t-min')),leader:v('t-leader'),content:v('t-content')};
+  return r;
+}
+function fill(r){
+  const s=(id,val)=>$(id).value = val ?? '';
+  s('f-date',r.date); s('f-start',r.start); s('f-end',r.end); s('f-site',r.site); s('f-addr',r.addr); s('f-kind',r.kind);
+  s('f-company',r.company); s('f-contact',r.contact); s('f-note',r.note);
+  $('f-follow').checked=!!r.follow; s('f-followDate',r.followDate); s('f-followText',r.followText);
+  $('followBox').classList.toggle('hidden',!r.follow);
+  selTasks=new Set(r.tasks||[]);
+  const i=r.insp||{}, e=r.edu||{}, k=r.risk||{}, t=r.tbm||{};
+  setChips('inspAreas',i.areas); s('i-count',i.count??0); s('i-action',i.action||'지적사항 없음'); s('i-items',i.items); s('i-good',i.good);
+  s('e-type',e.type||'정기교육'); s('e-topic',e.topic); s('e-people',e.people??0); s('e-min',e.minutes??0);
+  s('r-type',k.type||'최초평가'); s('r-process',k.process); s('r-hazards',k.hazards??0); s('r-measures',k.measures??0); s('r-detail',k.detail);
+  s('t-people',t.people??0); s('t-min',t.minutes??10); s('t-leader',t.leader); s('t-content',t.content);
+  photos=(r.photos||[]).slice(); syncTasks(); renderPhotos();
+}
+function resetForm(confirmFirst){
+  if(confirmFirst===true && !confirm('입력 중인 내용을 모두 지울까요?')) return;
+  editingId=null; $('editBanner').classList.add('hidden');
+  fill({date:today(),start:nowTime(),tasks:[]}); localStorage.removeItem('gcs-draft');
+}
+const nowTime = () => { const d=new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+
+/* 작성 중 임시저장 (사진 제외) */
+let draftT;
+function saveDraft(){ if(editingId) return; clearTimeout(draftT); draftT=setTimeout(()=>{ const r=collect(); r.photos=[]; lsSet('gcs-draft',r); },400); }
+FIELDS.forEach(id=>$(id).addEventListener('input',saveDraft));
+
+/* ================= 사진 ================= */
+function resizeImage(file){
+  return new Promise((res,rej)=>{
+    const fr=new FileReader();
+    fr.onload=()=>{ const img=new Image(); img.onload=()=>{
+      const max=1280; let {width:w,height:h}=img; if(w>max||h>max){ const k=max/Math.max(w,h); w=Math.round(w*k); h=Math.round(h*k); }
+      const c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h);
+      res(c.toDataURL('image/jpeg',0.72)); }; img.onerror=rej; img.src=fr.result; };
+    fr.onerror=rej; fr.readAsDataURL(file);
+  });
+}
+async function addPhotos(files){
+  for(const f of files){ try{ photos.push({data:await resizeImage(f),time:nowTime()}); }catch(e){ toast('사진을 읽지 못했습니다'); } }
+  renderPhotos();
+}
+$('camIn').onchange=e=>{ addPhotos([...e.target.files]); e.target.value=''; };
+$('galIn').onchange=e=>{ addPhotos([...e.target.files]); e.target.value=''; };
+function renderPhotos(){
+  $('photoBox').innerHTML=photos.map((p,i)=>`<div><img src="${p.data}" alt="현장사진"><button onclick="photos.splice(${i},1);renderPhotos()">×</button></div>`).join('');
+}
+
+/* GPS */
+function getGPS(){
+  if(!navigator.geolocation) return toast('이 기기는 위치 기능을 지원하지 않습니다');
+  toast('위치 확인 중…');
+  navigator.geolocation.getCurrentPosition(p=>{
+    const s=`위도 ${p.coords.latitude.toFixed(5)}, 경도 ${p.coords.longitude.toFixed(5)}`;
+    $('f-addr').value = $('f-addr').value ? $('f-addr').value+' ('+s+')' : s; saveDraft(); toast('위치를 입력했습니다');
+  },()=>toast('위치를 가져오지 못했습니다 (권한 확인)'),{enableHighAccuracy:true,timeout:10000});
+}
+
+/* ================= 저장 ================= */
+async function saveRecord(){
+  const r=collect();
+  if(!r.site){ toast('현장명을 입력해 주세요'); $('f-site').focus(); return; }
+  if(!r.date){ toast('방문일자를 입력해 주세요'); return; }
+  if(!r.tasks.length){ toast('수행 업무를 1개 이상 선택해 주세요'); return; }
+  const old = RECORDS.find(x=>x.id===r.id);
+  r.created = old?.created || new Date().toISOString(); r.updated=new Date().toISOString();
+  if(old) r.followDone = old.followDone;
+  try{ await dbPut(r); }catch(e){ toast('저장 실패: 저장공간을 확인해 주세요'); return; }
+  await reload();
+  const wasEdit=!!editingId;
+  resetForm();
+  toast(wasEdit?'수정했습니다':'저장했습니다');
+  if(confirm('업무일지 파일(.doc)을 지금 만들어 보관하시겠어요?\n(카톡·메일로 사무실 PC에 보낼 수 있습니다)')) exportRecordDoc(r.id);
+  show('list');
+}
+
+/* ================= 기록 목록 ================= */
+function summaryLine(r){
+  const a=[];
+  if(r.insp) a.push(`지적 ${r.insp.count}건`);
+  if(r.edu) a.push(`교육 ${r.edu.people}명`);
+  if(r.risk) a.push(`위험요인 ${r.risk.hazards}건`);
+  if(r.tbm) a.push(`TBM ${r.tbm.people}명`);
+  return a.join(' · ');
+}
+function renderList(){
+  const q=$('q').value.trim().toLowerCase(), qt=$('qTask').value;
+  const list=RECORDS.filter(r=>(!qt||r.tasks.includes(qt)) && (!q || JSON.stringify([r.site,r.company,r.addr,r.note,r.insp,r.edu,r.risk,r.tbm]).toLowerCase().includes(q)));
+  // 후속조치 미완료
+  const pend=RECORDS.filter(r=>r.follow&&!r.followDone).sort((a,b)=>(a.followDate||'9').localeCompare(b.followDate||'9'));
+  $('followList').innerHTML = pend.length ? `<div class="card"><h2>🔔 후속조치 확인 필요 ${pend.length}건</h2>${pend.map(r=>{
+      const late = r.followDate && r.followDate<today();
+      return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:13px">
+      <div><b>${esc(r.site)}</b> <span style="color:${late?'var(--warn)':'var(--sub)'}">${r.followDate?krDate(r.followDate)+(late?' 기한경과':''):'기한 미정'}</span><br>${esc(r.followText||'')}</div>
+      <button class="btn sm sec" onclick="followDone('${r.id}')">완료</button></div>`;}).join('')}</div>` : '';
+  if(!list.length){ $('listBox').innerHTML=`<div class="empty">${RECORDS.length?'검색 결과가 없습니다':'아직 기록이 없습니다.<br>현장 업무를 마치고 [입력] 탭에서 기록해 보세요.'}</div>`; return; }
+  $('listBox').innerHTML=list.map(r=>`<div class="list-item">
+    <div class="t"><div class="site">${esc(r.site)}</div><div class="d">${krDate(r.date)}<br>${esc(r.start||'')}${r.end?'~'+esc(r.end):''}</div></div>
+    <div style="font-size:12px;color:var(--sub);margin-top:2px">${esc([r.kind,r.company].filter(Boolean).join(' · '))}</div>
+    <div>${r.tasks.map(t=>`<span class="tag tg-${t}">${TASKS[t]}</span>`).join('')}${(r.photos||[]).length?`<span class="tag" style="background:#889">📷${r.photos.length}</span>`:''}</div>
+    <div style="font-size:13px;margin-top:6px">${esc(summaryLine(r))}</div>
+    <div class="acts">
+      <button class="btn sm" onclick="exportRecordDoc('${r.id}')">📄 일지 파일</button>
+      <button class="btn sm sec" onclick="editRecord('${r.id}')">✏️ 수정</button>
+      <button class="btn sm sec" onclick="copyRecord('${r.id}')">📑 복사해서 새로</button>
+      <button class="btn sm red" onclick="delRecord('${r.id}')">삭제</button>
+    </div></div>`).join('');
+}
+async function followDone(id){ const r=RECORDS.find(x=>x.id===id); if(!r) return; r.followDone=true; await dbPut(r); await reload(); renderList(); toast('후속조치 완료 처리했습니다'); }
+function editRecord(id){ const r=RECORDS.find(x=>x.id===id); if(!r) return; editingId=id; fill(r); $('editBanner').classList.remove('hidden'); show('input'); }
+function copyRecord(id){ const r=RECORDS.find(x=>x.id===id); if(!r) return; editingId=null; $('editBanner').classList.add('hidden');
+  fill({...r,date:today(),start:nowTime(),end:'',photos:[],follow:false,followDate:'',followText:''}); show('input'); toast('같은 현장 정보로 새 기록을 시작합니다'); }
+async function delRecord(id){ if(!confirm('이 기록을 삭제할까요? (되돌릴 수 없습니다)')) return; await dbDel(id); await reload(); renderList(); toast('삭제했습니다'); }
+function updateSiteList(){ $('siteList').innerHTML=[...new Set(RECORDS.map(r=>r.site))].map(s=>`<option value="${esc(s)}">`).join(''); }
+$('f-site').addEventListener('change',()=>{ // 기존 현장 선택 시 정보 자동 채움
+  const r=RECORDS.find(x=>x.site===$('f-site').value); if(!r) return;
+  if(!$('f-addr').value) $('f-addr').value=r.addr||''; if(!$('f-kind').value) $('f-kind').value=r.kind||'';
+  if(!$('f-company').value) $('f-company').value=r.company||''; if(!$('f-contact').value) $('f-contact').value=r.contact||'';
+});
+
+/* ================= 파일 저장/공유 ================= */
+async function saveFile(blob,name){
+  try{
+    const file=new File([blob],name,{type:blob.type});
+    if(navigator.canShare && navigator.canShare({files:[file]}) && /Android|iPhone|iPad/i.test(navigator.userAgent)){
+      if(confirm(`"${name}"\n\n[확인] 카톡·메일 등으로 보내기\n[취소] 휴대폰에 다운로드`)){ await navigator.share({files:[file],title:name}); return; }
+    }
+  }catch(e){ if(e.name==='AbortError') return; }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1500); toast('파일을 저장했습니다: '+name);
+}
+const safeName = s => String(s).replace(/[\\/:*?"<>|\s]+/g,'_').slice(0,40);
+const DOC_CSS = `body{font-family:'맑은 고딕','Malgun Gothic',sans-serif;font-size:11pt;line-height:1.5}
+h1{font-size:18pt;text-align:center;margin:0 0 6pt}h2{font-size:13pt;margin:14pt 0 6pt;border-bottom:1.5pt solid #16365C;color:#16365C}
+table{border-collapse:collapse;width:100%;margin:4pt 0}th,td{border:1px solid #777;padding:4pt 6pt;font-size:10pt;vertical-align:top}
+th{background:#E7ECF3;width:22%;text-align:center}.c td,.c th{text-align:center;width:auto}.meta{text-align:right;font-size:10pt;color:#444}
+img{width:300px;height:auto;margin:3px}p{margin:3pt 0}`;
+function docWrap(title,body){
+  return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${DOC_CSS}</style></head><body>${body}</body></html>`;
+}
+const docBlob = html => new Blob(['﻿',html],{type:'application/msword'});
+const writer = () => esc([SET.dept,SET.pos,SET.name].filter(Boolean).join(' '));
+
+/* ---- 1건 업무일지 ---- */
+function recordBody(r,withPhotos=true){
+  let h=`<table>
+  <tr><th>방문일시</th><td>${krDate(r.date)} ${esc(r.start||'')}${r.end?' ~ '+esc(r.end):''}</td></tr>
+  <tr><th>현장명</th><td>${esc(r.site)}</td></tr>
+  <tr><th>위치</th><td>${esc(r.addr)}</td></tr>
+  <tr><th>공종 / 업체</th><td>${esc([r.kind,r.company].filter(Boolean).join(' / '))}</td></tr>
+  <tr><th>현장 관계자</th><td>${esc(r.contact)}</td></tr>
+  <tr><th>수행 업무</th><td>${r.tasks.map(t=>TASKS[t]).join(', ')}</td></tr></table>`;
+  if(r.insp) h+=`<h2>현장안전점검</h2><table><tr><th>점검 분야</th><td>${esc(r.insp.areas.join(', ')||'-')}</td></tr>
+    <tr><th>지적사항</th><td>${r.insp.count}건 (${esc(r.insp.action)})</td></tr><tr><th>지적 및 조치내용</th><td>${nl(r.insp.items)||'-'}</td></tr>
+    <tr><th>양호 사항</th><td>${esc(r.insp.good)||'-'}</td></tr></table>`;
+  if(r.edu) h+=`<h2>안전교육 지원</h2><table><tr><th>교육 구분</th><td>${esc(r.edu.type)}</td></tr><tr><th>교육 주제</th><td>${esc(r.edu.topic)||'-'}</td></tr>
+    <tr><th>인원 / 시간</th><td>${r.edu.people}명 / ${r.edu.minutes}분</td></tr></table>`;
+  if(r.risk) h+=`<h2>위험성평가 지원</h2><table><tr><th>평가 유형</th><td>${esc(r.risk.type)}</td></tr><tr><th>대상 공정</th><td>${esc(r.risk.process)||'-'}</td></tr>
+    <tr><th>발굴 / 대책</th><td>유해·위험요인 ${r.risk.hazards}건 / 개선대책 ${r.risk.measures}건</td></tr><tr><th>주요 내용</th><td>${nl(r.risk.detail)||'-'}</td></tr></table>`;
+  if(r.tbm) h+=`<h2>TBM 실시 지원</h2><table><tr><th>참여 / 시간</th><td>${r.tbm.people}명 / ${r.tbm.minutes}분</td></tr><tr><th>주관자</th><td>${esc(r.tbm.leader)||'-'}</td></tr>
+    <tr><th>전달사항</th><td>${nl(r.tbm.content)||'-'}</td></tr></table>`;
+  h+=`<h2>종합 의견 및 후속조치</h2><table><tr><th>종합 의견</th><td>${nl(r.note)||'-'}</td></tr>
+    <tr><th>후속조치</th><td>${r.follow?`${esc(r.followText)}${r.followDate?' (이행확인 예정: '+krDate(r.followDate)+')':''}${r.followDone?' — 완료':''}`:'해당 없음'}</td></tr></table>`;
+  if(withPhotos && (r.photos||[]).length) h+=`<h2>현장 사진</h2><p>${r.photos.map(p=>`<img src="${p.data}" width="300">`).join(' ')}</p>`;
+  return h;
+}
+function exportRecordDoc(id){
+  const r=RECORDS.find(x=>x.id===id); if(!r) return;
+  const body=`<h1>현장 안전관리 지원 업무일지</h1><p class="meta">작성자: ${writer()||'-'} &nbsp; 작성일: ${krDate(today())}</p>${recordBody(r)}`;
+  saveFile(docBlob(docWrap('업무일지',body)), `업무일지_${r.date}_${safeName(r.site)}.doc`);
+}
+
+/* ================= 실적 집계 ================= */
+let period='month';
+document.querySelectorAll('#periodSeg button').forEach(b=>b.onclick=()=>{ period=b.dataset.p; setPeriod(); });
+function setPeriod(){
+  document.querySelectorAll('#periodSeg button').forEach(b=>b.classList.toggle('on',b.dataset.p===period));
+  const d=new Date(), y=d.getFullYear(), m=d.getMonth();
+  let f,t;
+  if(period==='month'){ f=new Date(y,m,1); t=new Date(y,m+1,0); }
+  else if(period==='prev'){ f=new Date(y,m-1,1); t=new Date(y,m,0); }
+  else if(period==='quarter'){ const q=Math.floor(m/3); f=new Date(y,q*3,1); t=new Date(y,q*3+3,0); }
+  else if(period==='year'){ f=new Date(y,0,1); t=new Date(y,11,31); }
+  if(f){ $('p-from').value=ymd(f); $('p-to').value=ymd(t); }
+  renderStats();
+}
+$('p-from').onchange=$('p-to').onchange=()=>{ period='custom'; document.querySelectorAll('#periodSeg button').forEach(b=>b.classList.toggle('on',b.dataset.p==='custom')); renderStats(); };
+function inPeriod(){ const f=$('p-from').value||'0000', t=$('p-to').value||'9999'; return RECORDS.filter(r=>r.date>=f&&r.date<=t).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start)); }
+function periodLabel(){ const f=$('p-from').value, t=$('p-to').value;
+  if(period==='month'||period==='prev'){ const [y,m]=f.split('-'); return `${y}년 ${+m}월`; }
+  if(period==='quarter'){ const [y,m]=f.split('-'); return `${y}년 ${Math.floor((+m-1)/3)+1}분기`; }
+  if(period==='year') return `${f.slice(0,4)}년`;
+  return `${krDate(f)} ~ ${krDate(t)}`; }
+function calc(list){
+  const s={visits:list.length, sites:new Set(list.map(r=>r.site)).size, days:new Set(list.map(r=>r.date)).size,
+    insp:0,inspIssues:0,inspFixed:0, edu:0,eduPeople:0,eduMin:0, risk:0,riskHaz:0,riskMea:0, tbm:0,tbmPeople:0,
+    follow:0,followDone:0, photos:0, bySite:{}, areas:{}};
+  list.forEach(r=>{
+    if(r.insp){ s.insp++; s.inspIssues+=r.insp.count; if(/즉시/.test(r.insp.action)) s.inspFixed+=r.insp.count; r.insp.areas.forEach(a=>s.areas[a]=(s.areas[a]||0)+1); }
+    if(r.edu){ s.edu++; s.eduPeople+=r.edu.people; s.eduMin+=r.edu.minutes; }
+    if(r.risk){ s.risk++; s.riskHaz+=r.risk.hazards; s.riskMea+=r.risk.measures; }
+    if(r.tbm){ s.tbm++; s.tbmPeople+=r.tbm.people; }
+    if(r.follow){ s.follow++; if(r.followDone) s.followDone++; }
+    s.photos+=(r.photos||[]).length;
+    const b=s.bySite[r.site]||(s.bySite[r.site]={n:0,kind:r.kind,company:r.company,insp:0,edu:0,risk:0,tbm:0,issues:0,last:''});
+    b.n++; r.tasks.forEach(t=>b[t]++); if(r.insp) b.issues+=r.insp.count; if(r.date>b.last) b.last=r.date;
+  });
+  return s;
+}
+function taskTableHTML(s){
+  return `<table class="c"><tr><th>구분</th><th>건수</th><th>주요 실적</th></tr>
+  <tr><td>현장안전점검</td><td>${s.insp}</td><td>지적 ${s.inspIssues}건 (즉시시정 ${s.inspFixed}건)</td></tr>
+  <tr><td>안전교육 지원</td><td>${s.edu}</td><td>${s.eduPeople}명 / ${s.eduMin}분</td></tr>
+  <tr><td>위험성평가 지원</td><td>${s.risk}</td><td>요인 ${s.riskHaz}건 / 대책 ${s.riskMea}건</td></tr>
+  <tr><td>TBM 실시 지원</td><td>${s.tbm}</td><td>참여 ${s.tbmPeople}명</td></tr>
+  <tr><th>계</th><th>${s.insp+s.edu+s.risk+s.tbm}</th><th>현장 ${s.sites}개소 / 방문 ${s.visits}회</th></tr></table>`;
+}
+function siteTableHTML(s){
+  const rows=Object.entries(s.bySite).sort((a,b)=>b[1].n-a[1].n);
+  if(!rows.length) return '<div class="hint">해당 기간 기록이 없습니다</div>';
+  return `<table class="c"><tr><th>현장명</th><th>방문</th><th>점검</th><th>교육</th><th>위험성</th><th>TBM</th><th>지적</th></tr>${rows.map(([k,b])=>`<tr><td style="text-align:left">${esc(k)}</td><td>${b.n}</td><td>${b.insp}</td><td>${b.edu}</td><td>${b.risk}</td><td>${b.tbm}</td><td>${b.issues}</td></tr>`).join('')}</table>`;
+}
+function renderStats(){
+  const s=calc(inPeriod());
+  $('statBox').innerHTML=[[s.visits,'현장 방문(회)'],[s.sites,'지원 현장(개소)'],[s.inspIssues,'지적사항(건)'],[s.eduPeople+s.tbmPeople,'교육·TBM 참여(명)'],[s.riskHaz,'위험요인 발굴(건)'],[`${s.followDone}/${s.follow}`,'후속조치 완료']]
+    .map(([v,l])=>`<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
+  $('taskTable').innerHTML=taskTableHTML(s); $('siteTable').innerHTML=siteTableHTML(s);
+  syncRepTitle();
+}
+$('repType').onchange=syncRepTitle;
+function syncRepTitle(){ const t={perf:'현장 안전관리 지원 실적 보고',site:'현장별 안전관리 지원 결과 보고',issue:'현장 안전점검 지적사항 및 조치 현황'}[$('repType').value]; $('repTitle').value=`${periodLabel()} ${t}`; }
+
+/* ================= 보고서 ================= */
+function buildReport(){
+  const list=inPeriod(); const s=calc(list); const type=$('repType').value; const ph=$('repPhotos').checked;
+  if(!list.length && !confirm('해당 기간 기록이 없습니다. 빈 양식으로 만들까요?')) return;
+  const topAreas=Object.entries(s.areas).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([a,n])=>`${a}(${n})`).join(', ');
+  let h=`<h1>${esc($('repTitle').value)}</h1><p class="meta">${writer()} · ${krDate(today())}</p>`;
+  if(type==='perf'){
+    h+=`<h2>1. 추진 개요</h2>
+    <p>○ 기간: ${krDate($('p-from').value)} ~ ${krDate($('p-to').value)}</p>
+    <p>○ 대상: 관내 공사·작업 현장 ${s.sites}개소 (방문 ${s.visits}회, 활동일수 ${s.days}일)</p>
+    <p>○ 내용: 현장안전점검, 안전교육 지원, 위험성평가 지원, TBM 실시 지원</p>
+    <p>○ 근거: 「산업안전보건법」 제29조(근로자 안전보건교육), 제36조(위험성평가) 및 「중대재해 처벌 등에 관한 법률」에 따른 안전보건 확보의무 이행</p>
+    <h2>2. 추진 실적</h2>${taskTableHTML(s)}
+    <h2>3. 주요 성과 및 지적사항</h2>
+    <p>○ 현장 안전점검 ${s.insp}회를 실시하여 지적사항 ${s.inspIssues}건 발굴, 이 중 ${s.inspFixed}건 현장 즉시 시정</p>
+    ${topAreas?`<p>○ 주요 취약 분야: ${esc(topAreas)}</p>`:''}
+    <p>○ 안전교육 ${s.edu}회(${s.eduPeople}명), TBM ${s.tbm}회(${s.tbmPeople}명) 지원으로 근로자 안전의식 제고</p>
+    <p>○ 위험성평가 ${s.risk}회 지원, 유해·위험요인 ${s.riskHaz}건 발굴 및 개선대책 ${s.riskMea}건 수립</p>
+    <p>○ 후속조치 대상 ${s.follow}건 중 ${s.followDone}건 이행 확인 완료${s.follow-s.followDone>0?`, ${s.follow-s.followDone}건 이행 확인 예정`:''}</p>
+    <h2>4. 현장별 지원 현황</h2>${siteTableHTML(s)}
+    <h2>5. 향후 계획</h2>
+    <p>○ 미이행 지적사항에 대한 이행 확인 및 재점검 실시</p>
+    <p>○ 취약 분야 중심의 계절별·공종별 맞춤형 안전교육 및 TBM 정착 지원</p>
+    <p>○ 위험성평가 미흡 현장에 대한 근로자 참여형 위험성평가 지원 확대</p>
+    <h2>붙임. 현장 지원 세부 내역</h2>${detailTable(list)}`;
+  } else if(type==='site'){
+    h+=`<h2>1. 개요</h2><p>○ 기간: ${krDate($('p-from').value)} ~ ${krDate($('p-to').value)}</p><p>○ 지원 현장: ${s.sites}개소, 방문 ${s.visits}회</p>
+    <h2>2. 현장별 요약</h2>${siteTableHTML(s)}<h2>3. 현장별 세부 결과</h2>`;
+    list.forEach((r,i)=>{ h+=`<h2 style="font-size:12pt;border:0">${i+1}) ${esc(r.site)} — ${krDate(r.date)}</h2>${recordBody(r,ph)}`; });
+  } else {
+    const iss=list.filter(r=>r.insp);
+    h+=`<h2>1. 개요</h2><p>○ 기간: ${krDate($('p-from').value)} ~ ${krDate($('p-to').value)}</p>
+    <p>○ 점검 ${s.insp}회, 지적사항 ${s.inspIssues}건 (즉시시정 ${s.inspFixed}건)</p>${topAreas?`<p>○ 주요 취약 분야: ${esc(topAreas)}</p>`:''}
+    <h2>2. 지적사항 및 조치 현황</h2><table class="c"><tr><th>연번</th><th>일자</th><th>현장명</th><th>점검분야</th><th>지적사항 및 조치</th><th>건수</th><th>조치결과</th><th>후속조치</th></tr>
+    ${iss.map((r,i)=>`<tr><td>${i+1}</td><td>${r.date.slice(5).replace('-','.')}</td><td>${esc(r.site)}</td><td>${esc(r.insp.areas.join(', '))}</td><td style="text-align:left">${nl(r.insp.items)}</td><td>${r.insp.count}</td><td>${esc(r.insp.action)}</td><td>${r.follow?(r.followDone?'완료':'진행중'):'-'}</td></tr>`).join('')}</table>`;
+    if(ph){ const withP=iss.filter(r=>(r.photos||[]).length); if(withP.length) h+=`<h2>3. 현장 사진</h2>`+withP.map(r=>`<p><b>${esc(r.site)}</b> (${krDate(r.date)})<br>${r.photos.map(p=>`<img src="${p.data}" width="300">`).join(' ')}</p>`).join(''); }
+  }
+  $('repPreview').innerHTML=`<style>${DOC_CSS.replace(/body\{[^}]*\}/,'')}</style>`+h;
+  $('repWrap').classList.remove('hidden'); $('repPreview').scrollIntoView({behavior:'smooth'});
+}
+function detailTable(list){
+  return `<table class="c"><tr><th>연번</th><th>일자</th><th>현장명</th><th>수행업무</th><th>주요 내용</th></tr>${list.map((r,i)=>`<tr><td>${i+1}</td><td>${r.date.slice(5).replace('-','.')}</td><td>${esc(r.site)}</td><td>${r.tasks.map(t=>TASKS[t].replace(/ 지원| 실시 지원/,'')).join(', ')}</td><td style="text-align:left">${esc(summaryLine(r))}</td></tr>`).join('')}</table>`;
+}
+function reportHTML(){ const c=$('repPreview').cloneNode(true); c.querySelectorAll('style').forEach(x=>x.remove()); return c.innerHTML; }
+function exportReportDoc(){ saveFile(docBlob(docWrap($('repTitle').value,reportHTML())), `${safeName($('repTitle').value)}.doc`); }
+function printReport(){
+  const w=window.open('','_blank'); if(!w) return toast('팝업이 차단되었습니다');
+  w.document.write(docWrap($('repTitle').value,reportHTML()).replace('</style>','@page{size:A4;margin:18mm}</style>')); w.document.close();
+  setTimeout(()=>w.print(),400);
+}
+
+/* ================= CSV ================= */
+function exportCSV(){
+  const list=inPeriod(); if(!list.length) return toast('해당 기간 기록이 없습니다');
+  const head=['연번','방문일자','시작','종료','현장명','위치','공종','업체','현장관계자','수행업무',
+    '점검여부','점검분야','지적건수','조치결과','지적·조치내용','교육여부','교육구분','교육주제','교육인원','교육시간(분)',
+    '위험성평가여부','평가유형','대상공정','위험요인(건)','개선대책(건)','TBM여부','TBM인원','TBM시간(분)','TBM전달사항',
+    '종합의견','후속조치','후속조치내용','이행확인예정일','이행완료','사진수'];
+  const q=v=>{ v=String(v??''); return /[",\n\r]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; };
+  const rows=list.map((r,i)=>{ const a=r.insp||{},e=r.edu||{},k=r.risk||{},t=r.tbm||{}; return [i+1,r.date,r.start,r.end,r.site,r.addr,r.kind,r.company,r.contact,r.tasks.map(x=>TASKS[x]).join('/'),
+    r.insp?'O':'',(a.areas||[]).join('/'),r.insp?a.count:'',a.action||'',a.items||'', r.edu?'O':'',e.type||'',e.topic||'',r.edu?e.people:'',r.edu?e.minutes:'',
+    r.risk?'O':'',k.type||'',k.process||'',r.risk?k.hazards:'',r.risk?k.measures:'', r.tbm?'O':'',r.tbm?t.people:'',r.tbm?t.minutes:'',t.content||'',
+    r.note,r.follow?'O':'',r.followText,r.followDate,r.followDone?'O':'',(r.photos||[]).length].map(q).join(','); });
+  saveFile(new Blob(['﻿'+[head.join(','),...rows].join('\r\n')],{type:'text/csv;charset=utf-8'}), `현장안전실적_${$('p-from').value}_${$('p-to').value}.csv`);
+}
+
+/* ================= 백업 ================= */
+function exportBackup(){
+  const data={app:'gc-safety-log',version:1,exported:new Date().toISOString(),settings:SET,records:RECORDS};
+  saveFile(new Blob([JSON.stringify(data)],{type:'application/json'}), `현장안전일지_백업_${today()}.json`);
+}
+$('restoreIn').onchange=async e=>{
+  const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  try{
+    const d=JSON.parse(await f.text()); if(d.app!=='gc-safety-log'||!Array.isArray(d.records)) throw 0;
+    let n=0; for(const r of d.records){ if(r&&r.id&&r.site){ await dbPut(r); n++; } }
+    if(d.settings && !SET.name){ SET=d.settings; lsSet('gcs-settings',SET); applySettings(); }
+    await reload(); toast(`${n}건을 불러왔습니다`); show('list');
+  }catch(err){ toast('올바른 백업 파일이 아닙니다'); }
+};
+async function wipeAll(){
+  if(!confirm('모든 기록을 삭제합니다. 백업하셨나요?')) return;
+  if(prompt('삭제하려면 "삭제"라고 입력하세요')!=='삭제') return;
+  await dbClear(); await reload(); toast('모든 기록을 삭제했습니다'); show('set');
+}
+
+/* ================= 시작 ================= */
+(async function init(){
+  await openDB(); await reload(); applySettings();
+  const d=lsGet('gcs-draft',null);
+  if(d && (d.site||d.note||(d.tasks||[]).length)){ editingId=null; fill(d); toast('작성 중이던 내용을 불러왔습니다'); }
+  else resetForm();
+  setPeriod();
+  if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
+})();
+</script>
+</body>
+</html>
